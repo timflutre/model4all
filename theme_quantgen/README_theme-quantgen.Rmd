@@ -1,0 +1,487 @@
+---
+title: "Theme \"quantgen\""
+author: "T. Flutre"
+date: '`r as.character(format(Sys.Date(), format="%d/%m/%Y"))`'
+colorlinks: true
+output:
+  pdf_document:
+    keep_tex: yes
+    number_sections: yes
+    toc: yes
+    toc_depth: 4
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 4
+    toc_float: true
+  word_document: default
+---
+
+<!--
+This R chunk is used to set up important options and load required packages.
+-->
+```{r setup, include=FALSE}
+R.v.maj <- as.numeric(R.version$major)
+R.v.min.1 <- as.numeric(strsplit(R.version$minor, "\\.")[[1]][1])
+if(R.v.maj < 2 || (R.v.maj == 2 && R.v.min.1 < 15))
+  stop("requires R >= 2.15", call.=FALSE)
+
+suppressPackageStartupMessages(library(knitr))
+opts_chunk$set(echo=TRUE, warning=TRUE, message=TRUE, cache=FALSE, fig.align="center")#, fig.width=12, fig.height=8, fig.path=figures/")
+```
+
+
+# Classical "animal model"
+
+## Statistical modelling
+
+### References
+
+* [Lynch and Walsh (1998)](http://www.worldcat.org/isbn/0878934812)
+
+* [Sorensen and Gianola (2002, chapter 13, page 564)](http://www.worldcat.org/isbn/0387954406)
+
+
+### Notations
+
+* $T$: number of traits ($\ge 1$; examples from plant biology are yield, protein content, resistance to a given pathogen, total leaf area, etc)
+
+* $I$: number of genotypes (e.g. 100)
+
+* $Q$: number of years (e.g. 3)
+
+* $N=I \times Q$: number of phenotypic measurements for a given trait (e.g. 300)
+
+* $P$: number of genetic markers (e.g. 5000); assumed to be autosomal, bi-allelic SNPs where $A_{1p}$ (resp. $A_{2p}$) is the arbitrarily-chosen, so-called "first" allele at the $p$-th SNP (resp. the second allele, often is the rarest one)
+
+* $y_{nt}$: phenotypic measurement of the $n$-th plant for the $t$-th trait; gathered into the $N$-dimensional vector $\boldsymbol{y}$ if $T = 1$ and into the $N \times T$ matrix $Y$ otherwise
+
+* $w_{nq}$: design variable indicating if the $n$-th plant's phenotypic measurement was taken the $q$-th year; gathered into the $N \times Q$ incidence matrix $W$
+
+* $c_q$: coefficient corresponding to the $q$-th year; gathered into the $Q$-dimensional vector $\boldsymbol{c}$ if $T = 1$ and into the $Q \times T$ matrix $C$ otherwise
+
+* $\mu_t$: intercept corresponding to the overall mean of the phenotypic measurements for the $t$-th trait, i.e. $\boldsymbol{c}_1$ if $T=1$ ($C_{1t}$ if $T > 1$) given that the first column of $W$ is full of $1$'s
+
+* $z_{ni}$: design variable indicating if the $n$-th plant's phenotypic measurement corresponds to the $i$-th genotype; gathered into the $N \times I$ incidence matrix $Z$
+
+* $g_{A,it}$: coefficient corresponding to the "breeding value" of $i$-th genotype for the $t$-th trait; gathered into the $I$-dimensional vector $\boldsymbol{g}_A$ if $T = 1$ and into the $I \times T$ matrix $G_A$ otherwise
+
+* $V_{G_A}$: variance component of the breeding values; a scalar if $T = 1$ and a $T \times T$ matrix otherwise
+
+* $A$: $I \times I$ matrix (estimated from pedigree or markers, and then considered known; contains the pairwise *additive genetic relationships* between individuals)
+
+* $g_{D,it}$: coefficient corresponding to the "dominant deviation" of the $i$-th genotype for the $t$-th trait; gathered into the $I$-dimensional vector $\boldsymbol{g}_D$ if $T = 1$ and into the $I \times T$ matrix $G_D$ otherwise
+
+* $V_{G_D}$: variance component of the dominant deviations; a scalar if $T = 1$ and a $T \times T$ matrix otherwise
+
+* $D$: $I \times I$ matrix (estimated from pedigree or markers, and then considered known; contains the pairwise *dominant genetic relationships* between individuals)
+
+* $V_E$: variance component of the errors; a scalar if $T = 1$ and a $T \times T$ matrix otherwise
+
+### Model
+
+* observed variables: $\{ W, Z, Y, A, D \}$
+
+* unobserved variables: $\{ C, V_E, V_{G_A}, V_{G_D}, G_A, G_D \}$
+
+\[
+Y = W C + Z G_A + Z G_D + E \text{ where } E \sim \mathcal{N}_{N \times T}(\boldsymbol{0}, Id, V_E)
+\]
+
+with $G_A \sim \mathcal{N}_{I \times T}(\boldsymbol{0}, A, V_{G_A})$ and $G_D \sim \mathcal{N}_{I \times T}(\boldsymbol{0}, D, V_{G_D})$, where $V_{G_A}$ and $V_{G_D}$ are $T \times T$ matrices.
+
+In the particular case where $T = 1$:
+
+\[
+\boldsymbol{y} = W \boldsymbol{c} + Z \boldsymbol{g}_A + Z \boldsymbol{g}_D + \boldsymbol{\epsilon} \text{ where } \boldsymbol{\epsilon} \sim \mathcal{N}_N(\boldsymbol{0}, V_E Id)
+\]
+
+with $\boldsymbol{g}_A \sim \mathcal{N}_I(\boldsymbol{0}, V_{G_A} A)$ and $\boldsymbol{g}_D \sim \mathcal{N}_I(\boldsymbol{0}, V_{G_D} D)$, where $V_{G_A}$ and $V_{G_D}$ are scalars.
+
+
+## Simulation
+
+### Help
+
+The command-line `model4all_simul --theme quantgen --themhlp` returns:
+
+```{r, echo=FALSE}
+cat(system(command="../src/model4all_simul --theme quantgen --themhlp", intern=TRUE), sep="\n")
+```
+
+
+### Case studies
+
+Simulations in this theme requires functions from the [rutilstimflutre](https://github.com/timflutre/rutilstimflutre) R package.
+No pedigree is simulated.
+Instead, genotypes at $P$ SNPs are simulated via the Sequential Coalescent with Recombination Model from [Staab et al (2015)](http://dx.doi.org/10.1093/bioinformatics/btu861).
+The $A$ relationship matrix is then calculated using the first estimator from [VanRaden (2008)](http://dx.doi.org/10.3168/jds.2007-0980) and the $D$ relationship matrix via the classical estimator from [Vitezica et al (2013)](http://dx.doi.org/10.1534/genetics.113.155176).
+
+Simulate phenotypes according to the classical "animal model" ($T=1, \; Q=3, \; I=100, \; V_{G_A}=15, \; V_E=5$, hence corresponding to a narrow-sense heritability of $0.75$):
+
+```{r quantgen_simul_basic, eval=FALSE}
+model4all_simul --theme quantgen --task quantgen-AM --simd quantgen_simul \
+--args "--ntraits 1 --nyears 3 --ngenos 100 --VGA 15 --VE 5"
+```
+
+Idem but with dominant variance, too:
+
+```{r quantgen_simul_dom, eval=FALSE}
+model4all_simul --theme quantgen --task quantgen-AM --simd quantgen_simul \
+--args "--ntraits 1 --nyears 3 --ngenos 100 --VGA 15 --VE 5 --dom --VGD 3"
+```
+
+Now with some phenotypes missing at random:
+
+```{r quantgen_simul_na, eval=FALSE}
+model4all_simul --theme quantgen --task quantgen-AM --simd quantgen_simul \
+--args "--ntraits 1 --nyears 3 --ngenos 100 --VGA 15 --VE 5 --na 0.2"
+```
+
+Or with fat-tail errors via a Student's t distribution:
+
+```{r quantgen_simul_errdf, eval=FALSE}
+model4all_simul --theme quantgen --task quantgen-AM --simd quantgen_simul \
+--args "--ntraits 1 --nyears 3 --ngenos 100 --VGA 15 --errdf 3"
+```
+
+Simulate several possibly-correlated traits:
+
+```{r quantgen_simul_multiphenos, eval=FALSE}
+model4all_simul --theme quantgen --task quantgen-AM --simd quantgen_simul \
+--args "--ntraits 2 --nyears 3 --ngenos 100 --VGA NULL --nuWA 5 --VE NULL --nuWE 5"
+```
+
+### TODO
+
+* simulate genotypes via a gene-drop method using a pedigree
+
+* try skew-t for errors (see Juarez & Steel, 2010)
+
+* try multivariate t for fat-tail errors with more than one trait
+
+* simulate genotypes with population structure, and phenotypes depending on it
+
+
+## Inference
+
+### Help
+
+The command-line `model4all_infer --theme quantgen --themhlp` returns:
+
+```{r, echo=FALSE}
+cat(system(command="../src/model4all_infer --theme quantgen --themhlp", intern=TRUE), sep="\n")
+```
+
+
+### Case studies
+
+#### lme4
+
+[lme4](https://cran.r-project.org/web/packages/lme4/):
+
+* R package wrapping C++ code
+
+* frequentist: ML or REML
+
+* current usage here requires a function from [rutilstimflutre](https://github.com/timflutre/rutilstimflutre) which doesn't handle multiple traits jointly
+
+```{r quantgen_infer_lme4, eval=FALSE}
+pkg="lme4"; model4all_infer --theme quantgen --task quantgen-AM \
+--simd quantgen_simul --infd quantgen_infer_$pkg --args "--pkg $pkg"
+pkg="lme4"; model4all_infer --theme quantgen --task quantgen-AM \
+--simd quantgen_simul --infd quantgen_infer_$pkg --args "--pkg $pkg --dom"
+```
+
+#### rrBLUP
+
+[rrBLUP](https://cran.r-project.org/web/packages/rrBLUP/):
+
+* R package
+
+* frequentist: ML or REML
+
+* handle only a single variance component and only the case $T = 1$
+
+```{r quantgen_infer_rrBLUP, eval=FALSE}
+pkg="rrBLUP"; model4all_infer --theme quantgen --task quantgen-AM \
+--simd quantgen_simul --infd quantgen_infer_$pkg --args "--pkg $pkg"
+```
+
+#### MCMCglmm
+
+[MCMCglmm](https://cran.r-project.org/web/packages/MCMCglmm/):
+
+* R package wrapping C code
+
+* bayesian: Gibbs sampler; specific to GLMM
+
+```{r quantgen_infer_MCMCglmm, eval=FALSE}
+pkg="MCMCglmm"; model4all_infer --theme quantgen --task quantgen-AM \
+--simd quantgen_simul --infd quantgen_infer_$pkg --args "--pkg $pkg" \
+--niters 5000 --burnin 1000 --thin 4
+```
+
+##### rjags
+
+[rjags](https://cran.r-project.org/web/packages/rjags/):
+
+* R package wrapping C++ code
+
+* bayesian: Gibbs sampler; generic
+
+* current usage here requires a function from [rutilstimflutre](https://github.com/timflutre/rutilstimflutre) which doesn't handle multiple traits jointly
+
+```{r quantgen_infer_rjags, eval=FALSE}
+pkg="rjags"; model4all_infer --theme quantgen --task quantgen-AM \
+--simd quantgen_simul --infd quantgen_infer_$pkg --args "--pkg $pkg" \
+--niters 5000 --burnin 1000 --thin 4
+```
+
+#### INLA
+
+[INLA](http://www.r-inla.org/):
+
+* R package wrapping C code
+
+* bayesian: integrated nested Laplace approximation; generic
+
+* current usage here requires a function from [rutilstimflutre](https://github.com/timflutre/rutilstimflutre) which doesn't handle multiple traits jointly
+
+```{r quantgen_infer_INLA, eval=FALSE}
+pkg="INLA"; model4all_infer --theme quantgen --task quantgen-AM \
+--simd quantgen_simul --infd quantgen_infer_$pkg --args "--pkg $pkg"
+```
+
+#### rstan
+
+[rstan](https://cran.r-project.org/web/packages/rstan/):
+
+* R package wrapping C++ code
+
+* bayesian: Hamiltonian Monte Carlo; generic
+
+* current usage doesn't handle multiple traits jointly (yet)
+
+This tool allows to specify the model via a text file using a suitable syntax.
+This text file is then converted into C++ code, and compiled by Stan.
+This can take some time, but needs to be done only once (hence `--sid 1`):
+
+```{r rstan_compile, eval=FALSE}
+pkg="rstan"; model4all_infer --theme quantgen \
+--task quantgen-AM --simd quantgen_simul --infd quantgen_infer_$pkg \
+--sid 1 --args "--pkg $pkg --co"
+```
+
+Then we can use it to fit all simulated data sets, without wasting time re-compiling the model every time:
+
+```{r rstan_fit, eval=FALSE}
+pkg="rstan"; model4all_infer --theme quantgen --task quantgen-AM \
+--simd quantgen_simul --infd quantgen_infer_$pkg --args "--pkg $pkg" \
+--niters 5000 --burnin 1000 --thin 4
+```
+
+### TODO
+
+* implement the inference for multiple traits jointly (include my rstan code; see rjags code in [Elhezzani](http://arxiv.org/abs/1507.08638))
+
+
+## Evaluation
+
+### Help
+
+The command-line `model4all_infer --theme quantgen --themhlp` returns:
+
+```{r, echo=FALSE}
+cat(system(command="../src/model4all_infer --theme quantgen --themhlp", intern=TRUE), sep="\n")
+```
+
+
+### Case studies
+
+Use the same command-line, only changing the `pkg` variable:
+
+```{r quantgen_eval_lme4, eval=FALSE}
+pkg="lme4"; model4all_eval --theme quantgen \
+--task quantgen-AM --simd quantgen_simul --infd quantgen_infer_$pkg \
+--evad quantgen_eval_$pkg --args "--pkg $pkg"
+```
+
+
+### TODO
+
+* why is there such a difference for "Cor(G.A, hat{G.A})" between rrBLUP and lme4?
+
+* why does MCMCglmm return way-too-large estimates of V.G.A when `ginverse` is included? (J. Hadfield answered "A looks ill-conditioned, or at least solve(A) looks problematic")
+
+* add evaluation when multiple traits are jointly analyzed
+
+* assess prediction accuracy (via CRPS, see R pkg [ensembleBMA](https://cran.r-project.org/web/packages/ensembleBMA/index.html))
+
+
+
+# Genomic prediction
+
+## Statistical modelling
+
+### References
+
+* [Gianola et al (2009)](http://dx.doi.org/10.1534/genetics.109.103952)
+
+* [Vitezica et al (2013)](http://dx.doi.org/10.1534/genetics.113.155176)
+
+
+### Notations
+
+* $I$: number of genotypes
+
+* $Q$: number of years
+
+* $N=I \times Q$: number of phenotypic measurements
+
+* $P$: number of genetic markers
+
+* $y_{n}$: phenotypic measurement of the $n$-th plant
+
+* $w_{nq}$: design variable indicating if the $n$-th plant's phenotypic measurement was taken the $q$-th year
+
+* $c_q$: coefficient corresponding to the $q$-th year
+
+* $\mu$: intercept corresponding to the overall mean of the phenotypic measurements
+
+* $z_{ni}$: design variable indicating if the $n$-th plant's phenotypic measurement corresponds to the $i$-th genotype
+
+* $x_{A,ip}$: variable additively coding the genotype of the $i$-th genotype at the $p$-th marker
+
+* $\pi$: proportion of markers having a non-zero effect
+
+* $a_p$: coefficient corresponding to the additive effect of the $p$-th marker
+
+* $\sigma_a^2$: variance of the non-zero additive marker effects
+
+* $\sigma^2$: variance of the errors
+
+
+### Model
+
+* observed variables: $\{ W, Z, X_A, \boldsymbol{y} \}$
+
+* unobserved variables: $\{ \boldsymbol{c}, \boldsymbol{a}, \sigma, \sigma_a, \pi \}$
+
+\[
+\boldsymbol{y} = W \boldsymbol{c} + Z X_A \boldsymbol{a} + \boldsymbol{\epsilon} \text{ where } \boldsymbol{\epsilon} \sim \mathcal{N}_N(\boldsymbol{0}, \sigma^2 Id)
+\]
+
+with $\forall p \in \{1,\ldots,P\}, \; a_p \sim \pi \mathcal{N}(0, \sigma_{a}^2) + (1 - \pi) \delta_0$.
+
+
+## Simulation
+
+### Help
+
+The command-line `model4all_simul --theme quantgen --themhlp` returns:
+
+```{r, echo=FALSE}
+cat(system(command="../src/model4all_simul --theme quantgen --themhlp", intern=TRUE), sep="\n")
+```
+
+
+### Case studies
+
+Simulations in this theme requires functions from the rutilstimflutre R package (see the "classical animal model" above).
+
+Simulate phenotypes with an additive infinitesimal genetic architecture ($\pi = 1$):
+
+```{r quantgen_simul_add-inf, eval=FALSE}
+model4all_simul --theme quantgen --task quantgen-add-inf --simd quantgen_simul \
+--args "--ntraits 1 --nyears 3 --ngenos 100 --mark --pi 1 --pveA 0.7"
+```
+
+Simulate phenotypes with a additive sparse genetic architecture ($\pi << 1$):
+
+```{r quantgen_simul_add-sparse, eval=FALSE}
+model4all_simul --theme quantgen --task quantgen-add-sparse --simd quantgen_simul \
+--args "--ntraits 1 --nyears 3 --ngenos 100 --mark --pi 0.1 --pveA 0.7"
+```
+
+Note that you can also specify a proportion of missing data, as well as use errors distributed according to a Student's $t$.
+
+### TODO
+
+* simulate phenotypes with dominant effects
+
+* simulate phenotypes with epistatic effects
+
+
+## Inference
+
+### Help
+
+The command-line `model4all_infer --theme quantgen --themhlp` returns:
+
+```{r, echo=FALSE}
+cat(system(command="../src/model4all_infer --theme quantgen --themhlp", intern=TRUE), sep="\n")
+```
+
+### Case studies
+
+#### rrBLUP
+
+* doesn't allow variable selection
+
+```{r quantgen_infer_genpred_rrBLUP_lmm, eval=FALSE}
+pkg="rrBLUP"; model4all_infer --theme quantgen --task quantgen-add-inf \
+--simd quantgen_simul --infd quantgen_infer_$pkg --args "--pkg $pkg --mark"
+```
+
+#### BGLR
+
+[BGLR](https://cran.r-project.org/web/packages/BGLR/):
+
+* R package wrapping C code
+
+* Bayesian: Gibbs sampler; specific to GLMM; allows variable selection
+
+```{r quantgen_infer_genpred_BGLR_lmm, eval=FALSE}
+pkg="BGLR"; model4all_infer --theme quantgen --task quantgen-add-inf \
+--simd quantgen_simul --infd quantgen_infer_$pkg --args "--pkg $pkg --mark --priormk BRR" \
+--niters 5000 --burnin 1000 --thin 4
+```
+
+```{r quantgen_infer_genpred_BGLR_vsr, eval=FALSE}
+pkg="BGLR"; model4all_infer --theme quantgen --task quantgen-add-sparse \
+--simd quantgen_simul --infd quantgen_infer_$pkg --args "--pkg $pkg --mark --priormk BayesC" \
+--niters 5000 --burnin 1000 --thin 4
+```
+
+#### np
+
+[np](https://cran.r-project.org/web/packages/np/):
+
+* R package wrapping C code
+
+* non-parametric
+
+* current implementation uses local-constant estimator ([Nadaraya-Watson](https://en.wikipedia.org/wiki/Kernel_regression))
+
+```{r quantgen_infer_genpred_np_lmm, eval=FALSE}
+pkg="np"; model4all_infer --theme quantgen --task quantgen-LMM \
+--simd quantgen_simul --infd quantgen_infer_$pkg --args "--pkg $pkg --mark"
+```
+
+
+#### TODO
+
+* fit with GS3 via [rgs3](https://github.com/timflutre/rgs3), `GEMMA`, `varbvs`, `rstan`, `INLA`
+
+
+## Evaluation
+
+...
+
+
+# Appendix
+
+```{r info}
+print(sessionInfo(), locale=FALSE)
+```

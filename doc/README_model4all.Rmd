@@ -1,0 +1,269 @@
+---
+title: "Introduction to \"model4all\""
+author: "T. Flutre & M. Denis"
+date: '`r as.character(format(Sys.Date(), format="%d/%m/%Y"))`'
+colorlinks: true
+output:
+  pdf_document:
+    keep_tex: yes
+    number_sections: yes
+    toc: yes
+    toc_depth: 4
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 4
+    toc_float: true
+  word_document: default
+---
+
+<!--
+This R chunk is used to set up important options and load required packages.
+-->
+```{r setup, include=FALSE}
+R.v.maj <- as.numeric(R.version$major)
+R.v.min.1 <- as.numeric(strsplit(R.version$minor, "\\.")[[1]][1])
+if(R.v.maj < 2 || (R.v.maj == 2 && R.v.min.1 < 15))
+  stop("requires R >= 2.15", call.=FALSE)
+
+suppressPackageStartupMessages(library(knitr))
+opts_chunk$set(echo=TRUE, warning=TRUE, message=TRUE, cache=FALSE, fig.align="center")#, fig.width=12, fig.height=8, fig.path=figures/")
+```
+
+
+# Preamble
+
+This document was generated from a [plain-text](https://en.wikipedia.org/wiki/Plain_text) file in the [R Markdown](http://rmarkdown.rstudio.com/) format (Rmd), especially useful with the [R](https://en.wikipedia.org/wiki/R_%28programming_language%29) software (use a recent-enough version, e.g. 3.0, with the [rmarkdown](https://cran.r-project.org/web/packages/rmarkdown/) package).
+
+The Rmd format allows to easily combine different components: regular paragraphs and section headings, but also chunks of code, as well as equations written in [LaTeX](https://en.wikipedia.org/wiki/LaTeX).
+A typical Rmd file can then be "converted" into a PDF or HTML file via the `rmarkdown` package which uses [pandoc](https://en.wikipedia.org/wiki/Pandoc) (a recent enough version of pandoc is recommended, such as 1.17).
+Such documents hence are called "dynamic reports": the PDF or HTML file can be regenerated whenever the underlying Rmd file changes.
+
+Practically, any Rmd file is best edited with [RStudio](https://en.wikipedia.org/wiki/RStudio), or [Emacs](https://en.wikipedia.org/wiki/Emacs) (with the following packages: [ESS](https://en.wikipedia.org/wiki/Emacs_Speaks_Statistics), [markdown](http://jblevins.org/projects/markdown-mode/) and [polymode](https://github.com/vitoshka/polymode)).
+
+
+
+# Overview
+
+This document is part of the "model4all" project.
+In the search for statistical models better adjusted to large, heterogeneous data sets, it is always fruitful to "experiment", that is, to simulate some not-too-unrealistic data sets, to fit various models, to compare them in terms of inference and prediction, to assess multiple software tools, etc.
+
+The "model4all" project aims at providing scientists, notably in plant biology, who are willing to learn more about statistical modelling, a light infrastructure facilitating such comparisons.
+By using [free and open-source software](https://en.wikipedia.org/wiki/Free_and_open-source_software) and being available on [GitHub](https://github.com/timflutre/model4all), it also aims at promoting collaborative development of such comparisons between scientists.
+
+
+
+# Functioning
+
+A **theme** gathers a set of simulation and inferential models which are used to explore a common research question.
+For instance, the "quantgen" theme is concerned with quantitative genetics, the "corrobs" theme deals with correlated observations, etc.
+
+For any given theme, the framework is decomposed into 3 steps:
+
+1. **simulate** some data according to a given model;
+
+2. **inference** by fitting a given model (possibly different than at step 1) to these data;
+
+3. **evaluate** parameter estimation, model fit, prediction, running time, memory usage, etc.
+
+Each step has a corresponding **generic program** located in the `src` directory of the project.
+After having followed the "Installation" instructions in the main `README`, these generic programs will likely be in your [PATH](https://en.wikipedia.org/wiki/PATH_%28variable%29).
+Their options are displayed via the following command-lines:
+
+```{r functioning_help, eval=FALSE}
+model4all_simul --help
+model4all_infer --help
+model4all_eval --help
+```
+
+Currently, these generic programs happens to be scripts coded in the R programming language.
+To share information from one step, say `simulate`, to the next, say `infer`, R objects are typically written into compressed files using the [`save`](https://stat.ethz.ch/R-manual/R-patched/library/base/html/save.html) R function, and read using the [`load`](https://stat.ethz.ch/R-manual/R-patched/library/base/html/load.html) R function.
+
+
+
+# Simulation step
+
+## Help
+
+The command-line `model4all_simul --help` returns:
+
+```{r simul_help, echo=FALSE}
+cat(system(command="../src/model4all_simul --help", intern=TRUE), sep="\n")
+```
+
+And for `model4all_simul --version`:
+
+```{r simul_version, echo=FALSE}
+cat(system(command="../src/model4all_simul --version", intern=TRUE), sep="\n")
+```
+
+## TODO
+
+* give some examples of varuous ways to simulate data
+
+
+
+# Inference step
+
+## Help
+
+The command-line `model4all_infer --help` returns:
+
+```{r infer_help, echo=FALSE}
+cat(system(command="../src/model4all_infer --help", intern=TRUE), sep="\n")
+```
+
+
+## TODO
+
+* add some details and references in this README about the various possible methods
+
+* for MCMC methods, add option to (try to) detect convergence automatically based on the Monte Carlo standard error (as in [runjags](https://cran.r-project.org/web/packages/runjags/))
+
+
+
+# Evaluation step
+
+## Help
+
+The command-line `model4all_eval --help` returns:
+
+```{r eval_help, echo=FALSE}
+cat(system(command="../src/model4all_eval --help", intern=TRUE), sep="\n")
+```
+
+## Background
+
+### Predictive performances for time series
+
+In the time series context, *one-step-ahead* prediction is of major interest.
+It consists in leaving out the last observation and re-fitting the model for predicting the next observation.
+The performance of probabilistic prediction can be evaluated using proper scoring rules (Gneiting, 2007; Paul, 2011):
+
+* squared error score (SES): $SES(P,y) = (y-\mu_P)^2$
+
+* logarithmic score (logS): $logS(P,y)=-log(P(Y=y))$
+
+* ranked probability score (RPS): $RPS(P,y)= \sum_{k=0}^{\infty} (P(Y \geq k) - 1(y \geq k))^2$
+
+with $P$ the predictive probability distribution, $\mu_P$ ist first moment, and $y$ the truly observed value.
+
+
+### Model checking and selection
+
+#### Methods based on the predictive distribution
+
+All measures presented in the following section are based on the predictive distribution.
+
+Let $y^*$ a future value or a value not yet observed in the experiment of the random phenomenon studied through $\boldsymbol{y}$.
+By assuming exchangeability for the augmented dataset $\boldsymbol{y*}=\{\boldsymbol{y}, y^*\}$, we have:
+
+\begin{align*}
+p(y^* |\boldsymbol{y})& = \frac{p(\boldsymbol{y},y^*)}{p(\boldsymbol{y})}\\
+& = \int p(y^*|\theta)p(\theta|\boldsymbol{y}) d\theta,
+\end{align*}
+
+with $\theta$ the vector of all parameters. 
+
+#### Cross-validation 
+
+The idea is to divide the sample in two groups: $\boldsymbol{y}=(\boldsymbol{y_t}, \boldsymbol{y_v})$ with $\boldsymbol{y_t}$ used for fitting the model and for estimating the posterior distribution of the parameters, and $\boldsymbol{y_v}$ for evaluating the predictive performance.
+Based on the leave one out cross-validation (LOO), assuming that $\boldsymbol{y_t} = \boldsymbol{y_{-i}}$ and $\boldsymbol{y_v} = y_i$, two indices are computed:
+
+1. The conditional predictive ordinate (CPO) \cite{Pettit1990}: $CPO_i = p(y_i^* |\boldsymbol{y_t})$
+2. The probability integral transform (PIT) \cite{Dawid1984}: $PIT_i=p(y_i^* \leq y_i | \boldsymbol{y_t})$
+
+For evaluating the predictive performance of the model, we check the empirical distribution of the PIT: a uniform distribution is expected meaning that the predictive distribution is coherent with the data (Gneiting, 2007).
+The sum of the log of the CPO values (Carlin, 2008), called the logarithm score, can be also used to compare models in terms of prediction performance (larger values denote a better fitting). 
+The Watanabe-Akaike information criterion (WAIC; Watanabe 2010) is an approximation of leave-one-out (LOO) cross-validation.
+
+Indices presented above are implemented in INLA. 
+
+Another view of the logarithm score:
+\begin{align*}
+logS(P,y) = -log(P(Y=y)),
+\end{align*}
+
+with $P$ the predictive probability distribution, and $y$ the truly observed value.
+Another measures called the ranked probability score (RPS) not implemented in INLA but used in other approaches seems be a robust alternative:
+
+\begin{align*}
+RPS(P, y) = \sum_{k=0}^{\infty} (P(Y \leq k) - 1(y \leq k))^2
+\end{align*}
+
+
+#### Posterior predictive check
+
+The posterior predictive checks have been introduced by Gelman (1996) and are basd on the assumption that $\boldsymbol{y_c} = \boldsymbol{y_f} = \boldsymbol{y}$.
+All observations are used for estimating and checking. 
+Two quantities are of interest:
+
+1. The posterior predictive distribution $p(y_i^*|\boldsymbol{y}) = \int p(y_{i}^{*}|\theta_i)p(\theta_i|\boldsymbol{y}) d\theta _i$
+2. The posterior predicitve p-value desfined as $p(y_i^* \leq y_i | \boldsymbol{y})$
+
+In addition, summary indices can be obtained to globally evaluate the goddness of fit of the model.
+The mean square error (MSE) and R squared ($R^2$)
+
+
+## TODO
+
+* add some details and references in this README about the various possible criteria depending on the inferential methods
+
+* see how to streamline and make more generic this step of the analysis
+
+
+
+# How to contribute?
+
+The best way to understand how to contribute is to read this document and have a look at the `R` files for the existing themes already present in the project directory.
+
+If you want to add a new tool at the "inference" step for an already-existing theme, you will need to edit the files named `<theme>_infer.R` and `<theme>_eval.R` in the `theme_<theme>` sub-directory.
+
+If you want to add a theme, you will need to choose a name, and create a sub-directory named `theme_<theme>`.
+Then, inside this new sub-directory, you will have to create the following files: `README_theme-<theme>.Rmd`, `<theme>_simul.R`, `<theme>_infer.R` and `<theme>_eval.R`.
+Of course, don't hesitate to look up the files from the other themes to save time and avoid doing something too different.
+
+Concretely, you can contribute by:
+
+- reporting [issues](https://github.com/timflutre/model4all/issues);
+
+- proposing [pull requests](https://github.com/timflutre/model4all/pulls).
+
+Note that for any substantial pull request, it's better to create a new [branch](https://www.git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell).
+
+Finally, don't hesitate to post [issues](https://github.com/timflutre/model4all/issues) on GitHub to let others know so that they can help you.
+At this moment, the following persons substantially contributed to the project and can be of some help (contributions following [R guidelines](http://journal.r-project.org/archive/2012-1/RJournal_2012-1_Hornik~et~al.pdf)):
+
+* Timothée Flutre (cre, aut)
+
+* Marie Denis (aut)
+
+* Gabrielle Weinrott (aut)
+
+* ...
+
+
+
+# Distributed computations
+
+For some data sets, models, algorithms and/or implementations, the inference step can take quite some time.
+In such cases, it is worth using a computer cluster, launching one job per simulated data set.
+Here is an example from the "quantgen" theme at the inference step using [rstan](https://cran.r-project.org/web/packages/rstan/) with a computer cluster managing job scheduling via [SGE](https://en.wikipedia.org/wiki/Oracle_Grid_Engine):
+
+```{r infer_qsub_jobs, eval=FALSE}
+cd <...>/theme_quantgen/
+pkg="rstan"; ls quantgen_simul/* | while read f; do \
+  i=$(basename $f | awk '{split($0,a,"\\."); split(a[1],b,"_"); print b[length(b)]}'); \
+  echo "model4all_infer --theme quantgen --src <...> --args \"--pkg $pkg\" \
+  --task quantgen-AM --simd quantgen_simul --infd quantgen_infer_$pkg --sid ${i}" \
+  | qsub -cwd -j y -V -N stdout_infer_quantgen_${pkg}_${i} -q normal.q; \
+done
+```
+
+
+
+# Appendix
+
+```{r info}
+print(sessionInfo(), locale=FALSE)
+```

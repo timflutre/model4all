@@ -1,0 +1,200 @@
+---
+title: "Theme \"corrobs\""
+author: "M. Denis"
+date: '`r as.character(format(Sys.Date(), format="%d/%m/%Y"))`'
+colorlinks: true
+output:
+  pdf_document:
+    keep_tex: yes
+    number_sections: yes
+    toc: yes
+    toc_depth: 4
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 4
+    toc_float: true
+  word_document: default
+---
+
+<!--
+This R chunk is used to set up important options and load required packages.
+-->
+```{r setup, include=FALSE}
+R.v.maj <- as.numeric(R.version$major)
+R.v.min.1 <- as.numeric(strsplit(R.version$minor, "\\.")[[1]][1])
+if(R.v.maj < 2 || (R.v.maj == 2 && R.v.min.1 < 15))
+  stop("requires R >= 2.15", call.=FALSE)
+
+suppressPackageStartupMessages(library(knitr))
+opts_chunk$set(echo=TRUE, warning=TRUE, message=TRUE, cache=FALSE, fig.align="center")#, fig.width=12, fig.height=8, fig.path=figures/")
+```
+
+
+# Statistical modelling
+
+## References
+
+* [Pinheiro and Bates (2006)](www.worldcat.org/oclc/54860997)
+
+* [Ruiz-Cardenaz et al. (2012)](http://dx.doi.org/10.1016/j.csda.2011.10.024)
+
+* [Blangiardo and Cameletti (2015)](www.worldcat.org/oclc/900278105)
+
+
+## Notations
+
+* $N$: number of individuals
+
+* $T$: number of time points (same for all individuals)
+
+* $y_{it}$: measurement on individual $i$ at time $t$
+
+* $\mu_i$: intercept for individual $i$
+
+* $\rho$: correlation between measurements at two consecutive time points
+
+* $\epsilon_{it}$: measurement error on individual $i$ at time $t$
+
+* $\sigma^2$: variance of the errors
+
+
+## Vector auto-regression of order 1 (VAR1)
+
+* data: $\mathcal{D} = \{y_{it}\}_{i=1,\ldots,N;t=1,\ldots,T}$
+
+* parameters: $\Theta = \{\mu_1, \ldots, \mu_N, \rho, \sigma^2\}$
+
+* likelihood: $\mathcal{L}(\Theta) = f(\mathcal{D} | \Theta)$
+
+\begin{align}
+\forall i, t > 1, \; \; y_{it} &= \rho \, y_{i(t-1)} +\epsilon_{it} \text{ with } \epsilon_{it} \sim \mathcal{N}(0, \sigma^2) \\
+\forall i, \; \; y_{i1} &\sim \mathcal{N} \left(0, \frac{\sigma^2}{(1-\rho^2)} \right) \text{ with } |\rho| < 1 \\
+\end{align}
+
+<!--
+In matrix form:
+
+\[
+Y = U Z + E \text{ with } E \sim \mathcal{N}_{N \times (T-1)}(0, \sigma^2 I, 0)
+\]
+
+where $Y$ is $N \times (T-1)$, $U$ is $N \times (N+1)$, $Z$ is $(N+1) \times (T-1)$ and $E$ is $N \times (T-1)$, such that:
+
+\[
+Y = \begin{bmatrix}
+y_{12} & \cdots & y_{1T} \\
+\vdots & \ddots & \vdots \\
+y_{N2} & \cdots & y_{NT} \\
+\end{bmatrix},
+\; \; U = \begin{bmatrix}
+\mu_1 & \rho & 0 & \cdots & 0 \\
+\vdots & 0 & \rho &  & \vdots \\
+\vdots & \vdots &  & \ddots &  \\
+\mu_N & 0 & \cdots &  & \rho \\
+\end{bmatrix},
+\; \; Z = \begin{bmatrix}
+1 & \cdots & 1 \\
+y_{11} & \cdots & y_{1(T-1)} \\
+\vdots & \ddots & \vdots \\
+y_{N1} & \cdots & y_{N(T-1)} \\
+\end{bmatrix}.
+\]
+-->
+
+
+## First order univariate dynamic linear model (DLM1)
+
+* data: $\mathcal{D} = \{y_{t}\}_{t=1,\ldots,T}$
+
+* parameters: $\Theta = \{\rho, \sigma_x^2, \sigma_y^2\}$
+
+* latent field: $\xi = \{x_{t}\}_{t=1,\ldots,T}$
+
+* likelihood: $\mathcal{L}(\Theta) = f(\mathcal{D} | \Theta)$
+
+\begin{equation}
+\left\{
+\begin{array}{lcc}
+y_t = x_t +v_t & v_t \sim N(0, \sigma_y^2)& t=1,\, \dots, n\\ 
+x_t = \rho x_{t-1} +w_t &  w_t \sim N(0, \sigma_x^2)& t=2,\, \dots, n \\
+\end{array}
+\right.
+\end{equation}
+
+
+
+# Simulation
+
+## Help
+
+The command-line `model4all_simul --theme corrobs --themhlp` returns:
+
+```{r, echo=FALSE}
+cat(system(command="../src/model4all_simul --theme corrobs --themhlp", intern=TRUE), sep="\n")
+```
+
+
+## Case studies
+
+Simulate phenotypes according to the vector auto-regression of order 1:
+
+```{r corrobs_simul_VAR1, eval=FALSE}
+model="VAR1"; model4all_simul --theme corrobs --task corrobs-${model} \
+--simd corrobs_simul --args "--model $model"
+```
+
+Simulate phenotypes according to the first order univariate dynamic linear model:
+
+```{r corrobs_simul_DLM1, eval=FALSE}
+model="DLM1"; model4all_simul --theme corrobs --task corrobs-${model} \
+--simd corrobs_simul --args "--model $model"
+```
+
+## TODO
+
+* simulations from Poisson and Binomial distribution
+
+* make $\rho$ depends on spatial structure
+
+
+
+# Inference
+
+## Help
+
+The command-line `model4all_infer --theme corrobs --themhlp` returns:
+
+```{r, echo=FALSE}
+cat(system(command="../src/model4all_infer --theme corrobs --themhlp", intern=TRUE), sep="\n")
+```
+
+
+## Case studies
+
+Perform inference for the vector auto-regression of order 1, for example with the nlme package:
+
+```{r corrobs_infer_nlme, eval=FALSE}
+pkg="nlme"; model="VAR1"; model4all_infer --theme corrobs --task corrobs-${model} \
+--simd corrobs_simul --infd corrobs_infer_$pkg --args "--pkg $pkg"
+```
+
+Perform inference for the first order univariate dynamic linear model, for example with the INLA package:
+
+```{r corrobs_infer_INLA, eval=FALSE}
+pkg="INLA"; model="DLM1"; model4all_infer --theme corrobs --task corrobs-${model} \
+--simd corrobs_simul --infd corrobs_infer_$pkg --args "--pkg $pkg --model $model"
+```
+
+
+# Evaluation
+
+...
+
+
+
+# Appendix
+
+```{r info}
+print(sessionInfo(), locale=FALSE)
+```

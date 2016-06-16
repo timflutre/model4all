@@ -1,0 +1,160 @@
+---
+title: "Theme \"bpca\""
+author: "G. Weinrott"
+date: '`r as.character(format(Sys.Date(), format="%d/%m/%Y"))`'
+colorlinks: true
+output:
+  pdf_document:
+    keep_tex: yes
+    number_sections: yes
+    toc: yes
+    toc_depth: 4
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 4
+    toc_float: true
+  word_document: default
+---
+
+<!--
+This R chunk is used to set up important options and load required packages.
+-->
+```{r setup, include=FALSE}
+R.v.maj <- as.numeric(R.version$major)
+R.v.min.1 <- as.numeric(strsplit(R.version$minor, "\\.")[[1]][1])
+if(R.v.maj < 2 || (R.v.maj == 2 && R.v.min.1 < 15))
+  stop("requires R >= 2.15", call.=FALSE)
+
+suppressPackageStartupMessages(library(knitr))
+opts_chunk$set(echo=TRUE, warning=TRUE, message=TRUE, cache=FALSE, fig.align="center")#, fig.width=12, fig.height=8, fig.path=figures/")
+```
+
+
+# Statistical modelling
+
+## References
+
+* Christopher M. Bishop : [Bayesian Principal Component Analysis](http://papers.nips.cc/paper/1549-bayesian-pca.pdf)
+
+* Petr Keil and Jan Smycka : ['bPCA package'](http://www.petrkeil.com/?p=2316)
+
+
+## Notations
+
+* $N$: number of individuals
+
+* $P$: number of metrics measured during the experiment
+
+* $Y$: data matrix where $\boldsymbol{y}_1$, ..., $\boldsymbol{y}_i$, ..., $\boldsymbol{y}_N$ are the columns, each of length $P$
+
+
+## Model
+
+We fit a multivariate normal distribution to the $\boldsymbol{y}_i$, so we obtain the following likelihood:
+
+\[
+\boldsymbol{y}_i \sim \mathcal{N}_P(\boldsymbol{\mu}, \Sigma)
+\]
+
+The priors are the following:
+
+\begin{eqnarray*}
+\boldsymbol{\mu} &\sim& \mathcal{N}_P(\boldsymbol{0}_P, \Phi) \\
+\Sigma^{-1} &\sim& \mathcal{W}(\Psi, \frac{1}{P})
+\end{eqnarray*}
+
+For simplicity, suppose that both $\Phi$ and $\Psi$ are diagonal with variance $P$.
+It is certainly possible to treat $\Phi$ and $\Psi$ as hyperparameters, which adds a level to the Bayesian model.
+
+
+
+# Simulation
+
+## Help
+
+The command-line `model4all_simul --theme bpca --themhlp` returns:
+
+```{r simul_help, echo=FALSE}
+cat(system(command="../src/model4all_simul --theme bpca --themhlp", intern=TRUE), sep="\n")
+```
+
+
+## Case studies
+
+We randomly simulate the data matrix $Y$ as an [Ornstein-Uhlenbeck process](https://en.wikipedia.org/wiki/Ornstein-Uhlenbeck_process).
+The user can choose the number of curves to generate, and the number of points of observations for each curve.
+
+Simulate data for the "bpca" theme:
+
+```{r bpca_simul, eval=FALSE}
+model4all_simul --theme bpca --simd bpca_simul
+```
+
+
+
+# Inference
+
+## Help
+
+The command-line `model4all_infer --theme bpca --themhlp` returns:
+
+```{r infer_help, echo=FALSE}
+cat(system(command="../src/model4all_infer --theme bpca --themhlp", intern=TRUE), sep="\n")
+```
+
+
+## Case studies
+
+### rstan
+
+```{r infer_rstan, eval=FALSE}
+model4all_infer --theme bpca --simd bpca_simul --infd bpca_infer_rstan \
+--args "--pkg rstan"
+```
+
+### rjags
+
+```{r infer_rjags, eval=FALSE}
+model4all_infer --theme bpca --simd bpca_simul --infd bpca_infer_rjags \
+--args "--pkg rjags"
+```
+
+### TODO
+
+* debug rstan model, not sure where the error comes from...
+
+* rjags seems to use a lot of memory
+
+
+
+
+# Evaluation
+
+## Help
+
+The command-line `model4all_eval --theme bpca --themhlp` returns:
+
+```{r eval_help, echo=FALSE}
+cat(system(command="../src/model4all_eval --theme bpca --themhlp", intern=TRUE), sep="\n")
+```
+
+
+## Case studies
+
+Evaluate inference, for instance for `rjags` using the command : 
+
+```{r eval_rjags, eval=FALSE}
+pkg="rjags"; model4all_eval --theme bpca --simd bpca_simul \
+--infd bpca_infer_${pkg} --evad bpca_eval_${pkg} --args "--pkg ${pkg}"
+```
+
+This evaluation step uses Flegal's package to calculate batch means : ['mcmcse'](https://cran.r-project.org/web/packages/mcmcse/mcmcse.pdf) and subsequently produce the Monte Carlo standard error.
+
+
+
+# Appendix
+
+```{r info}
+print(sessionInfo(), locale=FALSE)
+```
