@@ -123,6 +123,21 @@ x_t = \rho x_{t-1} +w_t &  w_t \sim N(0, \sigma_x^2)& t=2,\, \dots, n \\
 \end{equation}
 
 
+## Linear mixed model with autocorrelated errors (LMMcorr)
+
+* data: $\mathcal{D} = \{y_{it}\}_{i=1,\ldots,N;t=1,\ldots,T}$
+  
+* parameters: $\Theta = \{ \mu, \rho, \sigma_{\varepsilon}^2, \sigma_a^2\}$
+    
+* likelihood: $\mathcal{L}(\Theta) = f(\mathcal{D} | \Theta)$
+
+\begin{align}
+      y_{it} = \mu + a_i + \varepsilon_{it} \;\; \textrm{with} \;\; i\in \{1,\dots, N\}, t \in \{1,\dots, T\}, a_i \sim \mathcal{N}(0,\sigma_a^2)
+\end{align}	
+\begin{align}
+     \varepsilon_{i1} &\sim \mathcal{N} \left(0, \sigma_{\varepsilon}^2 \right) \;  \hspace{1,3cm} |\rho| < 1   \; \; 	\forall i\\
+      \varepsilon_{it} &= \rho \, \varepsilon_{i(t-1)} +s_{it} \hspace{1cm}	 s_{it} \sim \mathcal{N}(0, \sigma^2_{\varepsilon}(1-\rho^2)) \; \;,  t=2,\dots, T \\
+\end{align}
 
 # Simulation
 
@@ -140,16 +155,22 @@ cat(system(command="../src/model4all_simul --theme corrobs --themhlp", intern=TR
 Simulate phenotypes according to the vector auto-regression of order 1:
 
 ```{r corrobs_simul_VAR1, eval=FALSE}
-model="VAR1"; model4all_simul --theme corrobs --task corrobs-${model} \
+model="VAR1"; model4all_simul --theme corrobs --src ./theme_corrobs --task corrobs-${model} \
 --simd corrobs_simul --args "--model $model"
 ```
 
 Simulate phenotypes according to the first order univariate dynamic linear model:
 
 ```{r corrobs_simul_DLM1, eval=FALSE}
-model="DLM1"; model4all_simul --theme corrobs --task corrobs-${model} \
+model="DLM1"; model4all_simul --theme corrobs --src ./theme_corrobs --task corrobs-${model} \
 --simd corrobs_simul --args "--model $model"
 ```
+
+Simulate phenotypes according to the linear mixed model with autocorrelated errors:
+
+```{r corrobs_simul_LMMcorr, eval=FALSE}
+model="LMMCorr"; model4all_simul --theme corrobs --src ./theme_corrobs --task corrobs-${model} \
+--simd corrobs_simul --args "--model $model"
 
 ## TODO
 
