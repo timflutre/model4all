@@ -35,11 +35,11 @@ opts_chunk$set(echo=TRUE, warning=TRUE, message=TRUE, cache=FALSE, fig.align="ce
 
 ## References
 
-* [Pinheiro and Bates (2006)](www.worldcat.org/oclc/54860997)
+* [Pinheiro and Bates (2006)](http://www.worldcat.org/oclc/54860997)
 
 * [Ruiz-Cardenaz et al. (2012)](http://dx.doi.org/10.1016/j.csda.2011.10.024)
 
-* [Blangiardo and Cameletti (2015)](www.worldcat.org/oclc/900278105)
+* [Blangiardo and Cameletti (2015)](http://www.worldcat.org/oclc/900278105)
 
 
 ## Notations
@@ -123,6 +123,21 @@ x_t = \rho x_{t-1} +w_t &  w_t \sim N(0, \sigma_x^2)& t=2,\, \dots, n \\
 \end{equation}
 
 
+## Linear mixed model with autocorrelated errors (LMMcorr)
+
+* data: $\mathcal{D} = \{y_{it}\}_{i=1,\ldots,N;t=1,\ldots,T}$
+  
+* parameters: $\Theta = \{ \mu, \rho, \sigma_{\varepsilon}^2, \sigma_a^2\}$
+    
+* likelihood: $\mathcal{L}(\Theta) = f(\mathcal{D} | \Theta)$
+
+\begin{align}
+\forall i, t, \; y_{it} &= \mu + a_i + \varepsilon_{it} \\
+\forall i, \; a_i &\sim \mathcal{N}(0, \sigma_a^2) \\
+\forall i, \; \varepsilon_{i1} &\sim \mathcal{N}(0, \sigma_{\varepsilon}^2) \\
+\forall i, t > 1, \; \varepsilon_{it} &= \rho \, \varepsilon_{i(t-1)} +s_{it} \text{ with }	s_{it} \sim \mathcal{N}(0, \sigma^2_{\varepsilon}(1-\rho^2)) \text{ and } |\rho| < 1 \\
+\end{align}
+
 
 # Simulation
 
@@ -150,6 +165,14 @@ Simulate phenotypes according to the first order univariate dynamic linear model
 model="DLM1"; model4all_simul --theme corrobs --task corrobs-${model} \
 --simd corrobs_simul --args "--model $model"
 ```
+
+Simulate phenotypes according to the linear mixed model with autocorrelated errors:
+
+```{r corrobs_simul_LMMcorr, eval=FALSE}
+model="LMMcorr"; model4all_simul --theme corrobs --task corrobs-${model} \
+--simd corrobs_simul --args "--model $model"
+```
+
 
 ## TODO
 

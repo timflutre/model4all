@@ -5,7 +5,7 @@
 ## Versioning: https://mulcyber.toulouse.inra.fr/projects/comp-fit-gmrf/
 
 corrobs.simul.name <- "corrobs_simul"
-corrobs.simul.version <- "0.2.2" # http://semver.org/
+corrobs.simul.version <- "0.3.0" # http://semver.org/
 
 ##' Display the help on stdout
 ##'
@@ -18,10 +18,12 @@ corrobsSimulHelp <- function(){
   txt <- paste0(txt, "  -h, --help\tdisplay the help and exit\n")
   txt <- paste0(txt, "  -V, --version\toutput version information and exit\n")
   txt <- paste0(txt, "  -v, --verbose\tverbosity level (0/default=1/2/3)\n")
-  txt <- paste0(txt, "      --model\ttype of model for simulation (default=VAR1/DLM1)\n")
+  txt <- paste0(txt, "      --model\ttype of model for simulation (default=VAR1/DLM1/LMMcorr)\n")
   txt <- paste0(txt, "      --ninds\tnumber of individuals (default=100)\n")
   txt <- paste0(txt, "      --ntimes\tnumber of observed times (default=10)\n")
+  txt <- paste0(txt, "      --mu\tconstant parameter (default=5)\n")
   txt <- paste0(txt, "      --su2\tresidual variance component for process (default=5)\n")
+  txt <- paste0(txt, "      --sa2\tindividual variance component for observation (default=5)\n")
   txt <- paste0(txt, "      --sy2\tresidual variance component for observation (default=1)\n")
   txt <- paste0(txt, "      --rho\tcorrelation parameter (default=0.8)\n")
   txt <- paste0(txt, "\n")
@@ -78,7 +80,15 @@ corrobsSimulParseArgs <- function(prog.args, prog.opts){
       prog.opts$nb.times <- as.numeric(prog.args[i+1])
       i <- i + 1
     }
+    else if(prog.args[i] == "--mu"){
+      prog.opts$nb.times <- as.numeric(prog.args[i+1])
+      i <- i + 1
+    }
     else if(prog.args[i] == "--su2"){
+      prog.opts$sigma.u2 <- as.numeric(prog.args[i+1])
+      i <- i + 1
+    }
+    else if(prog.args[i] == "--sa2"){
       prog.opts$sigma.u2 <- as.numeric(prog.args[i+1])
       i <- i + 1
     }
@@ -107,7 +117,7 @@ corrobsSimulParseArgs <- function(prog.args, prog.opts){
 ##' @return named list
 ##' @author Marie Denis, Timothee Flutre
 corrobsSimulCheckOptions <- function(prog.opts){
-  if(! prog.opts$model %in% c("VAR1", "DLM1")){
+  if(! prog.opts$model %in% c("VAR1", "DLM1", "LMMcorr")){
     msg <- paste0("ERROR: unknown --model ", prog.opts$model)
     write(msg, stderr())
     quit(save="no", status=1)
@@ -123,8 +133,7 @@ corrobsSimulCheckOptions <- function(prog.opts){
 ##' @param T integer, number of observation times (default = 10)
 ##' @param su2 variance parameter (default = 5)
 ##' @param rho, correlation parameter (default =0.8)
-##' @return return correlated observations for ninds individuals
-##'
+##' @return list with data
 ##' @author Marie Denis
 simul.VAR1 <- function(N = 100, T=10, rho=0.8, su2=5 ){
   Y <- NULL
@@ -146,8 +155,7 @@ simul.VAR1 <- function(N = 100, T=10, rho=0.8, su2=5 ){
 ##' @param su2 variance parameter for latent process (default = 5)
 ##' @param sy2 variance parameter for observations (default = 1)
 ##' @param rho, correlation parameter (default =0.8)
-##' @return return observations and states from a first order DLM
-##'
+##' @return list with data
 ##' @author Marie Denis
 simul.DLM1 <- function(T=10, rho=0.8, su2=5, sy2=1){
   w  <- rnorm(T,0,sqrt(su2))
@@ -161,6 +169,34 @@ simul.DLM1 <- function(T=10, rho=0.8, su2=5, sy2=1){
   }
   data <- data.frame(y=y)
   return(list(data = data))
+}
+
+##' LMMcorr
+##'
+##' Simulate the observation from a linear mixed model with autocorrelated errors
+##' @param N integer, number of individuals (default = 100)
+##' @param T integer, number of observation times (default = 10)
+##' @param mu integer, constant parametr (default = 5)
+##' @param sa2 individual variance parameter (default = 5)
+##' @param sy2 residual variance parameter (default = 5)
+##' @param rho, correlation parameter (default =0.8)
+##' @return list with data
+##' @author Marie Denis
+simul.LMMcorr <- function(N = 100, T=10, rho=0.8, sa2=5, sy2 =5, mu=5){
+  Y <- matrix(0, ncol= N, nrow= T)
+  E <- matrix(0, ncol= N, nrow= T)
+  E[1,] <- rnorm(N,0, sd= sqrt(sy2))
+  b <- rnorm(N,0,sqrt(sa2))
+  Y[1,] <- mu + b +E[1,]
+  for (t in 2:T){
+    E[t,] <- rho*E[t-1,]+rnorm(N,0, sd = sqrt((1-rho^2)*sy2))
+    Y[t,] <- mu+ b+E[t,]
+  }
+  colnames(Y) <- paste("Ind", 1:N)
+  rownames(Y) <- paste("T",1:T)
+  y <- matrix(as.vector(Y),ncol=1)
+  data <- data.frame(y=y, I= factor(rep(1:N,each=(T))))
+  return(list(data = data, Y = Y))
 }
 
 ##' Perform the simulation(s)
@@ -181,11 +217,18 @@ corrobsSimulRun <- function(prog.opts, simul.file, seed){
                       T = prog.opts$nb.times,
                       rho = prog.opts$rho,
                       su2 = prog.opts$sigma.u2)
-  } else{
+  } else if(prog.opts$model == "DLM1"){
     sim <- simul.DLM1(T = prog.opts$nb.times,
                       rho = prog.opts$rho,
                       sy2 = prog.opts$sigma.y2,
                       su2 = prog.opts$sigma.u2)
+  } else if(prog.opts$model == "LMMcorr"){
+    sim <- simul.LMMcorr(N = prog.opts$nb.inds,
+                         T = prog.opts$nb.times,
+                         rho = prog.opts$rho,
+                         sa2 = prog.opts$sigma.a2,
+                         sy2 = prog.opts$sigma.y2,
+                         mu = prog.opts$mu)
   }
 
   if(prog.opts$verbose > 0)
@@ -200,12 +243,14 @@ corrobsSimulRun <- function(prog.opts, simul.file, seed){
 ##' @param simul.file character
 ##' @param seed integer
 ##' @return nothing
-##' @author Thimothee Flutre
+##' @author Timothee Flutre
 corrobsSimulMain <- function(prog.args, simul.file, seed){
   prog.opts <- list(verbose=1,
                     nb.inds=100,
                     nb.times=10,
+                    mu=5,
                     model="VAR1",
+                    sigma.a2=5,
                     sigma.u2=5,
                     sigma.y2=1,
                     rho=0.8)
