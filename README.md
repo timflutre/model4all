@@ -3,7 +3,7 @@ Project "model4all"
 
 This directory contains statistical models and computer code as part of a **collaborative, pedagogical initiative for statistical modelling based on simulation, between statisticians, and plant geneticists and eco-physiologists**.
 
-The coordinators are [Timothée Flutre](http://openwetware.org/wiki/User:Timothee_Flutre) (Inra) and Marie Denis (Cirad), both working at [AGAP](http://umr-agap.cirad.fr/en) (a joint research unit in Montpellier, France).
+The coordinators are [Timothée Flutre](http://openwetware.org/wiki/User:Timothee_Flutre) (Inra) and [Marie Denis](https://www.researchgate.net/profile/Marie_Denis2) (Cirad), both working at [AGAP](http://umr-agap.cirad.fr/en) (a joint research unit in Montpellier, France).
 The project hence is currently funded, and the copyright owned, by [Inra](https://en.wikipedia.org/wiki/Institut_national_de_la_recherche_agronomique) and [Cirad](https://en.wikipedia.org/wiki/Centre_de_coop%C3%A9ration_internationale_en_recherche_agronomique_pour_le_d%C3%A9veloppement).
 However, the goal is to actively **promote collaboration "in the open"**, a much-needed endeavour in face of global challenges.
 Consequently, all contributions in terms of documents are under the [CC BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/) license, and all contributions in terms of code are under the [GNU AGPL v3](https://www.gnu.org/licenses/agpl.html).
@@ -89,4 +89,4 @@ Nevertheless, here is a try:
 
 Concretely, you can contribute by:
 - reporting [issues](https://github.com/timflutre/model4all/issues);
-- proposing [pull requests](https://github.com/timflutre/model4all/pulls) (if substantial, please create a new [branch](https://www.git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell)).
+- proposing [pull requests](https://github.com/timflutre/model4all/pulls) (to the "dev" branch, not "master"; read more on [branching](https://www.git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell)).
