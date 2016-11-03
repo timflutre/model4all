@@ -84,6 +84,8 @@ opts_chunk$set(echo=TRUE, warning=TRUE, message=TRUE, cache=FALSE, fig.align="ce
 
 * unobserved variables: $\{ C, V_E, V_{G_A}, V_{G_D}, G_A, G_D \}$
 
+* likelihood:
+
 \[
 Y = W C + Z G_A + Z G_D + E \text{ where } E \sim \mathcal{N}_{N \times T}(\boldsymbol{0}, Id, V_E)
 \]
@@ -367,6 +369,8 @@ pkg="lme4"; model4all_eval --theme quantgen \
 * observed variables: $\{ W, Z, X_A, \boldsymbol{y} \}$
 
 * unobserved variables: $\{ \boldsymbol{c}, \boldsymbol{a}, \sigma, \sigma_a, \pi \}$
+
+* likelihood:
 
 \[
 \boldsymbol{y} = W \boldsymbol{c} + Z X_A \boldsymbol{a} + \boldsymbol{\epsilon} \text{ where } \boldsymbol{\epsilon} \sim \mathcal{N}_N(\boldsymbol{0}, \sigma^2 Id)
