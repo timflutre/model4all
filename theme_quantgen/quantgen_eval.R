@@ -284,7 +284,6 @@ quantgenEvalRun <- function(prog.opts, simul.file, infer.file, eval.file){
                    fix[1], fix[2], fix[3])
     write(txt, stdout())
 
-    message("fixed effects:")
     se.fix <- coefficients(summary(fit$merMod))[, "Std. Error"]
     txt <- sprintf(paste("se(hat{c})=[%.2f %.2f %.2f]",
                          "\nci_95(hat{c_1})=[%.2f %.2f]",
