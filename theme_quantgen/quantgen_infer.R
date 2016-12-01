@@ -5,7 +5,7 @@
 ## Versioning: https://mulcyber.toulouse.inra.fr/projects/comp-fit-gmrf/
 
 quantgen.infer.name <- "quantgen_infer"
-quantgen.infer.version <- "0.5.1" # http://semver.org/
+quantgen.infer.version <- "0.5.2" # http://semver.org/
 
 ##' Display the help on stdout
 ##'
@@ -173,26 +173,26 @@ quantgenInfer_BGLR <- function(y, W, Z, X, prior.mark,
 ##'
 ##' integrated nested Laplace approximation
 ##' http://www.r-inla.org/comments-1?place=msg%2Fr-inla-discussion-group%2FiDmuCF6dp6I%2F8KLAikmayPMJ
-##' @param dat
+##' @param data
 ##' @param A
 ##' @param D
 ##' @param verbose
 ##' @return list
 ##' @author Timothee Flutre
-quantgenInfer_INLA <- function(dat, A, D, verbose=0){
+quantgenInfer_INLA <- function(data, A, D, verbose=0){
   fit <- NULL
 
-  tmp <- dat
+  tmp <- data
   colnames(tmp)[colnames(tmp) == "geno"] <- "geno.add"
 
   if(is.null(D)){
-    fit <- rutilstimflutre::inlaAM(dat=tmp,
+    fit <- rutilstimflutre::inlaAM(data=tmp,
                                    relmat=list(geno.add=A),
                                    verbose=ifelse(verbose > 0, TRUE, FALSE),
                                    silent=TRUE)
   } else{
     tmp$geno.dom <- tmp$geno.add
-    fit <- rutilstimflutre::inlaAM(dat=tmp,
+    fit <- rutilstimflutre::inlaAM(data=tmp,
                                    relmat=list(geno.add=A, geno.dom=D),
                                    verbose=ifelse(verbose > 0, TRUE, FALSE),
                                    silent=TRUE)
@@ -204,30 +204,30 @@ quantgenInfer_INLA <- function(dat, A, D, verbose=0){
 ##' Fit quantgen with lme4
 ##'
 ##' REML
-##' @param dat
+##' @param data
 ##' @param A
 ##' @param D
 ##' @param meth.ci
 ##' @param verbose
 ##' @return list
 ##' @author Timothee Flutre
-quantgenInfer_lme4 <- function(dat, A, D=NULL, meth.ci="profile", verbose=0){
+quantgenInfer_lme4 <- function(data, A, D=NULL, meth.ci="profile", verbose=0){
   fit <- NULL
 
-  tmp <- dat
+  tmp <- data
   colnames(tmp)[colnames(tmp) == "geno"] <- "geno.add"
 
   if(is.null(D)){
     fit <- rutilstimflutre::lmerAM(
         formula=response1 ~ 1 + year + (1|geno.add),
-        dat=tmp, relmat=list(geno.add=A),
+        data=tmp, relmat=list(geno.add=A),
         ci.meth=meth.ci,
         verbose=verbose)
   } else{
     tmp$geno.dom <- tmp$geno.add
     fit <- rutilstimflutre::lmerAM(
         formula=response1 ~ 1 + year + (1|geno.add) + (1|geno.dom),
-        dat=tmp, relmat=list(geno.add=A, geno.dom=D),
+        data=tmp, relmat=list(geno.add=A, geno.dom=D),
         ci.meth=meth.ci,
         verbose=verbose)
   }
@@ -240,7 +240,7 @@ quantgenInfer_lme4 <- function(dat, A, D=NULL, meth.ci="profile", verbose=0){
 ##' MCMC (mostly Gibbs sampling, slice sampling possible for binary responses)
 ##' priors: Normal for fixed effects, inv-Wishart for (co)variances, scaled non-central F possible, improper possible
 ##' aim: store 1,000-2,000 iterations and autocorr(1) less than 0.1
-##' @param dat
+##' @param data
 ##' @param A
 ##' @param D
 ##' @param nb.iters
@@ -249,11 +249,11 @@ quantgenInfer_lme4 <- function(dat, A, D=NULL, meth.ci="profile", verbose=0){
 ##' @param verbose
 ##' @return list
 ##' @author Timothee Flutre
-quantgenInfer_MCMCglmm <- function(dat, A, D, nb.iters, burnin, thin,
+quantgenInfer_MCMCglmm <- function(data, A, D, nb.iters, burnin, thin,
                                    verbose=0){
-  Q <- nlevels(dat$year)
+  Q <- nlevels(data$year)
 
-  tmp <- dat
+  tmp <- data
   colnames(tmp)[colnames(tmp) == "geno"] <- "geno.add"
 
   if(is.null(D)){
@@ -339,7 +339,7 @@ quantgenInfer_np <- function(infer.dir, y, Z, X, default.bw.sel,
 ##'
 ##' MCMC (Gibbs)
 ##' @param infer.dir
-##' @param dat
+##' @param data
 ##' @param W
 ##' @param Z
 ##' @param A
@@ -351,23 +351,23 @@ quantgenInfer_np <- function(infer.dir, y, Z, X, default.bw.sel,
 ##' @param verbose
 ##' @return list
 ##' @author Timothee Flutre
-quantgenInfer_rjags <- function(infer.dir, dat, W, Z, A, D,
+quantgenInfer_rjags <- function(infer.dir, data, W, Z, A, D,
                                 nb.chains, nb.iters, burnin, thin,
                                 verbose=0){
   fit <- NULL
 
-  tmp <- dat
+  tmp <- data
   colnames(tmp)[colnames(tmp) == "geno"] <- "geno.add"
 
   if(is.null(D)){
-    fit <- rutilstimflutre::jagsAM(dat=tmp,
+    fit <- rutilstimflutre::jagsAM(data=tmp,
                                    relmat=list(geno.add=A),
                                    nb.chains=nb.chains, burnin=burnin,
                                    nb.iters=nb.iters, thin=thin,
                                    verbose=verbose)
   } else{
     tmp$geno.dom <- tmp$geno.add
-    fit <- rutilstimflutre::jagsAM(dat=tmp,
+    fit <- rutilstimflutre::jagsAM(data=tmp,
                                    relmat=list(geno.add=A, geno.dom=D),
                                    nb.chains=nb.chains, burnin=burnin,
                                    nb.iters=nb.iters, thin=thin,
@@ -412,7 +412,7 @@ quantgenInfer_rrBLUP <- function(model, method="REML", use.markers=FALSE,
 ##' HMC
 ##' @param infer.dir
 ##' @param compile.only
-##' @param dat
+##' @param data
 ##' @param A
 ##' @param errors.Student
 ##' @param nb.chains
@@ -423,14 +423,14 @@ quantgenInfer_rrBLUP <- function(model, method="REML", use.markers=FALSE,
 ##' @return list
 ##' @author Timothee Flutre
 quantgenInfer_rstan <- function(infer.dir, compile.only,
-                                dat, A=NULL, errors.Student,
+                                data, A=NULL, errors.Student,
                                 nb.chains, nb.iters, burnin, thin, verbose=0){
   fit <- NULL
 
-  tmp <- dat
+  tmp <- data
   colnames(tmp)[colnames(tmp) == "geno"] <- "geno.add"
 
-  fit <- rutilstimflutre::stanAM(dat=tmp,
+  fit <- rutilstimflutre::stanAM(data=tmp,
                                  relmat=list(geno.add=A),
                                  errors.Student=errors.Student,
                                  nb.chains=nb.chains, burnin=burnin,
@@ -448,7 +448,7 @@ quantgenInfer_rstan <- function(infer.dir, compile.only,
 ##' Fit quantgen with R2OpenBUGS
 ##'
 ##' MCMC (Gibbs)
-##' @param dat
+##' @param data
 ##' @param W
 ##' @param Z
 ##' @param A
@@ -458,13 +458,13 @@ quantgenInfer_rstan <- function(infer.dir, compile.only,
 ##' @param thin
 ##' @return list
 ##' @author Timothee Flutre
-quantgenInfer_R2OpenBUGS <- function(dat, W, Z, A, nb.chains, nb.iters, burnin,
+quantgenInfer_R2OpenBUGS <- function(data, W, Z, A, nb.chains, nb.iters, burnin,
                                      thin){
-  N <- length(dat$response1)
-  Q <- nlevels(dat$year)
-  I <- nlevels(dat$ind)
+  N <- length(data$response1)
+  Q <- nlevels(data$year)
+  I <- nlevels(data$ind)
   fit <- bugs(data=list(N=N, P=P, Q=Q, W=W, Z=Z,
-                        Ainv=solve(A), y=dat$response1,
+                        Ainv=solve(A), y=data$response1,
                         Id=diag(I), muu=rep(0,I)),
               inits=NULL,
               parameters.to.save=c("alpha", "u", "sigmau2", "sigma2"),
@@ -519,7 +519,7 @@ quantgenInferRun <- function(prog.opts, simul.file, infer.dir, infer.file){
 
   if(prog.opts$pkg == "INLA"){
     st <- system.time(fit <- quantgenInfer_INLA(
-                          dat=model$dat,
+                          data=model$data,
                           A=A,
                           D=D,
                           verbose=prog.opts$verbose-1))
@@ -527,7 +527,7 @@ quantgenInferRun <- function(prog.opts, simul.file, infer.dir, infer.file){
 
   if(prog.opts$pkg == "lme4"){
     st <- system.time(fit <- quantgenInfer_lme4(
-                          dat=model$dat,
+                          data=model$data,
                           A=A,
                           D=D,
                           meth.ci="profile"))
@@ -535,7 +535,7 @@ quantgenInferRun <- function(prog.opts, simul.file, infer.dir, infer.file){
 
   if(prog.opts$pkg == "MCMCglmm"){
     st <- system.time(fit <- quantgenInfer_MCMCglmm(
-                          dat=model$dat,
+                          data=model$data,
                           A=A,
                           D=D,
                           nb.iters=prog.opts$nb.iters,
@@ -556,7 +556,7 @@ quantgenInferRun <- function(prog.opts, simul.file, infer.dir, infer.file){
   if(prog.opts$pkg == "rjags"){
     st <- system.time(fit <- quantgenInfer_rjags(
                           infer.dir=infer.dir,
-                          dat=model$dat,
+                          data=model$data,
                           W=model$W,
                           Z=model$Z,
                           A=A,
@@ -580,7 +580,7 @@ quantgenInferRun <- function(prog.opts, simul.file, infer.dir, infer.file){
     st <- system.time(fit <- quantgenInfer_rstan(
                           infer.dir=infer.dir,
                           compile.only=prog.opts$compile.only,
-                          dat=model$dat,
+                          data=model$data,
                           A=A,
                           errors.Student=prog.opts$errors.Student,
                           nb.chains=prog.opts$nb.chains,
@@ -592,7 +592,7 @@ quantgenInferRun <- function(prog.opts, simul.file, infer.dir, infer.file){
 
   if(prog.opts$pkg == "R2OpenBUGS"){
     st <- system.time(fit <- quantgenInfer_R2OpenBUGS(
-                          dat=model$dat,
+                          data=model$data,
                           W=model$W,
                           Z=model$Z,
                           A=A,
